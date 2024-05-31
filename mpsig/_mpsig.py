@@ -150,9 +150,7 @@ def butter_lp_ord(wp, ws, deltap, deltas, fs=1):
     Note: deltap and deltas are not in dB!
     """
     r = ((1/deltas)**2 - 1) / ((1/(1-deltap))**2 - 1)
-    print(r)
     t = mp.tan(mp.pi*ws/fs)/mp.tan(mp.pi*wp/fs)
-    print(t)
     n = mp.log(r) / (2*mp.log(t))
     return n
 
