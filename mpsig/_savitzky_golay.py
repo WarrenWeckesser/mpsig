@@ -2,12 +2,20 @@
 from mpmath import mp
 
 
+def _matrix_col_to_list(m, col):
+    """
+    Convert column `col` of mp.matrix `m` to a 1-d list.
+    """
+    return m[:, col].T.tolist()[0]
+
+
 def _lstsq(A, b):
     U, S, V = mp.svd(A, compute_uv=True)
-    s = [S[k, 0] for k in range(S.rows)]
-    s1 = [s[k] for k in range(len(s)) if abs(s[k]) > mp.sqrt(mp.eps)]
-    beta = U.transpose() @ mp.matrix(b)
-    t1 = [beta[k, 0]/s1[k] for k in range(len(s1))]
+    s = _matrix_col_to_list(S, 0)
+    threshold = s[0]*max(A.rows, A.cols)*mp.eps
+    s1 = [s[k] for k in range(len(s)) if abs(s[k]) > threshold]
+    beta = _matrix_col_to_list(U.transpose() @ mp.matrix(b), 0)
+    t1 = [beta[k]/s1[k] for k in range(len(s1))]
     z = mp.matrix(t1 + [mp.zero]*(V.rows - len(t1)))
     return V.transpose() @ z
 
@@ -127,9 +135,9 @@ def savgol_coeffs(window_length, polyorder, deriv=0, delta=None, pos=None,
             delta = mp.mpf(delta)
 
         # Form the design matrix A. The columns of A are powers of the integers
-        # from -pos to window_length - pos - 1. The powers (i.e., rows) range
-        # from 0 to polyorder. (That is, A is a vandermonde matrix, but not
-        # necessarily square.)
+        # or half-integers from -pos to window_length - pos - 1.
+        # The powers (i.e., rows) range from 0 to polyorder. (That is, A is a
+        # vandermonde matrix, but not necessarily square.)
         x = [k - pos for k in range(window_length)]
 
         if use == "conv":
@@ -153,7 +161,7 @@ def savgol_coeffs(window_length, polyorder, deriv=0, delta=None, pos=None,
 
         # Find the least-squares solution of A*c = y
         c = _lstsq(A, y)
-        coeffs = [c[k, 0] for k in range(c.rows)]
+        coeffs = _matrix_col_to_list(c, 0)
         if rem == 1 and pos == halflen and deriv % 2 == 1:
             # window_length is odd, pos is the middle of the
             # window, and deriv is odd.  Under these conditions,
